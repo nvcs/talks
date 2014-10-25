@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Obscurssissement de code Python</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+        <!--<link rel="stylesheet" href="css/theme/default.css" id="theme">-->
+		<link rel="stylesheet" href="css/theme/serif.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+		<script>
+			if( window.location.search.match( /print-pdf/gi ) ) {
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.type = 'text/css';
+				link.href = 'css/print/pdf.css';
+				document.getElementsByTagName( 'head' )[0].appendChild( link );
+			}
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-background="qb.png">
+                <h2>Obscurcissement de code Python</h2>
+					<h3>taking the snake to the dark side</h3>
+					<p>
+                    Always two there are, no more, no less:<br/>
+                    an apprentice <strong>Nicolas Szlifierski</strong> [<em>Quarkslab, Telecom Bretagne</em>]</br>
+                    and a master <strong>Serge Guelton</strong> [<em>Quarkslab, Telecom Bretagne</em>]
+					</p>
+				</section>
+
+				<section>
+                <h2><code class="bash">/me</code></h2>
+                <h3>Nicolas Szlifierski</h3>
+                <p>
+                <ul>
+                    <li>Étudiant à Télécom Bretagne</li>
+                    <li>Stagiaire chez  <a href="http://www.quarkslab.com/">QuarksLab</a></li>
+                    <li>nicolas.szlifierski@telecom-bretagne.eu</li>
+                </ul>
+                </p>
+				</section>
+
+                <section>
+                    <h2>Le Bytecode ?</h2>
+                    <pre><code class="python">>>> def foo:
+...     print "hello world"
+...
+>>> dis.dis(foo)
+ 2  0 LOAD_CONST    1 ('hello world')
+    3 PRINT_ITEM
+    4 PRINT_NEWLINE
+    5 LOAD_CONST    0 (None)
+    8 RETURN_VALUE
+                    </code></pre>
+                </section>
+				<section>
+					<h2>Le bytecode Python est simple à reverser</h2>
+                    <p>
+                    <pre><code class="sh">$ echo "print('hello world')" > hello.py
+$ python -m py_compile hello
+$ pycdc hello.pyc
+# Source Generated with Decompyle++
+# File: hello.pyc (Python 2.7)
+
+print 'hello world'</pre></code>
+					</p>
+				</section>
+
+				<section>
+					<h2>Avec des optimisations ?</h2>
+                    <p>
+                    <pre><code class="sh">$ printf "a = 1\nif a: print(a + 2)" > dce.py
+$ python -O -m py_compile dce
+$ pycdc dce.pyo
+# Source Generated with Decompyle++
+# File: dce.pyo (Python 2.7)
+
+a = 1
+if a:
+    print a + 2</pre></code>
+                    L'option -O de CPython ne réalise quasiment aucune optimisation
+					</p>
+				</section>
+
+                <section>
+                <h2>Solutions pour l'obscurcissement</h2>
+                <p>
+                <ul>
+                    <li>Modification du code source</li>
+                    <li>Modification du bytecode</li>
+                    <li>Modification de l'interpréteur</li>
+                </ul>
+                </p>
+                </section>
+
+                <section>
+                <h2>Modification du code source</h2>
+                <p>Les transformation source à source en Python sont difficile, à cause du <strong>liaison retardé</strong> et du <strong>polymorphisme</strong>:
+                <pre><code class="python">for i in range(10):
+    s += hex(i)</code></pre>
+                </p>
+                <div class="fragment">
+                <pre><code class="python">range = lambda *args: args</code></pre>
+                <pre><code class="python">__builtin__.hex, __builtin__.oct =  __builtin__.oct, __builtin__.hex</code></pre>
+                </div>
+                </section>
+
+                <section>
+                <h2>Obscurcissement du flux d'exécution</h2>
+                <ol>
+                    <li>Transformation des instructions en fonctions qui modifient un dictionnaire représentant la mémoire</li>
+                    <li>Enchainement de ces fonctions en les composant</li>
+                    <li>Transformation des définitions de fonctions en fonctions lambda</li>
+                </ol>
+                </section>
+
+                <section>
+                <h2>Un aperçus du challenge HITB</h2>
+                <pre><code>(lambda g, c, d: (lambda _: (_.__setitem__('$', ''.join([(_['chr'] if ('chr'
+in _) else chr)((_['_'] if ('_' in _) else _)) for _['_'] in (_['s'] if ('s'
+in _) else s)[::(-1)]])), _)[-1])( (lambda _: (lambda f, _: f(f, _))((lambda
+__,_: ((lambda _: __(__, _))((lambda _: (_.__setitem__('i', ((_['i'] if ('i'
+in _) else i) + 1)),_)[(-1)])((lambda _: (_.__setitem__('s',((_['s'] if ('s'
+in _) else s) + [((_['l'] if ('l' in _) else l)[(_['i'] if ('i' in _) else i
+)] ^ (_['c'] if ('c' in _) else c))])), _)[-1])(_))) if (((_['g'] if ('g' in
+_) else g) % 4) and ((_['i'] if ('i' in _) else i)< (_['len'] if ('len' in _
+) else len)((_['l'] if ('l' in _) else l)))) else _)), _) ) ( (lambda _: (_.
+__setitem__('!', []), _.__setitem__('s', _['!']), _)[(-1)] ) ((lambda _: (_.
+__setitem__('!', ((_['d'] if ('d' in _) else d) ^ (_['d'] if ('d' in _) else
+d))), _.__setitem__('i', _['!']), _)[(-1)])((lambda _: (_.__setitem__('!', [
+(_['j'] if ('j' in _) else j) for  _[ 'i'] in (_['zip'] if ('zip' in _) else
+zip)((_['l0'] if ('l0' in _) else l0), (_['l1'] if ('l1' in _) else l1)) for
+_['j'] in (_['i'] if ('i' in _) else i)]), _.__setitem__('l', _['!']), _)[-1
+])((lambda _: (_.__setitem__('!', [1373, 1281, 1288, 1373, 1290, 1294, 1375,
+1371,1289, 1281, 1280, 1293, 1289, 1280, 1373, 1294, 1289, 1280, 1372, 1288,
+1375,1375, 1289, 1373, 1290, 1281, 1294, 1302, 1372, 1355, 1366, 1372, 1302,
+1360, 1368, 1354, 1364, 1370, 1371, 1365, 1362, 1368, 1352, 1374, 1365, 1302
+]), _.__setitem__('l1',_['!']), _)[-1])((lambda _: (_.__setitem__('!',[1375,
+1368, 1294, 1293, 1373, 1295, 1290, 1373, 1290, 1293, 1280, 1368, 1368,1294,
+1293, 1368, 1372, 1292, 1290, 1291, 1371, 1375, 1280, 1372, 1281, 1293,1373,
+1371, 1354, 1370, 1356, 1354, 1355, 1370, 1357, 1357, 1302, 1366, 1303,1368,
+1354, 1355, 1356, 1303, 1366, 1371]), _.__setitem__('l0', _['!']), _)[(-1)])
+                ({ 'g': g, 'c': c, 'd': d, '$': None})))))))['$'])</code></pre>
+                <p>Intéressé ? <a href="http://blog.quarkslab.com/you-like-python-security-challenge-and-traveling-win-a-free-ticket-to-hitb-kul.html">http://blog.quarkslab.com</a></p>
+                </section>
+
+                <section>
+                <h2>Modification du bytecode</h2>
+                <p>Plusieurs possibilités ici !
+                <ul>
+                    <li>Mélanger les opcodes (ce que fait Dropbox)</li>
+                    <li>Ajouter des nouveaux opcodes</li>
+                    <li>Utiliser des séquences d'opcodes non standard</li>
+                </ul>
+                </section>
+
+                <section>
+                <h2>Mélange des opcodes</h2>
+                <p>Modification de l'interpréteur afin que ceci :
+                <pre><code>&gt;&gt;&gt; import dis
+&gt;&gt;&gt; print dis.opmap['BINARY_ADD']
+23</code></pre></p>
+                <p>Devienne cela :
+                <pre><code>&gt;&gt;&gt; import dis
+&gt;&gt;&gt; print dis.opmap['BINARY_ADD']
+62</code></pre></p>
+                </section>
+
+                <section>
+                <h2>Contraintes</h2>
+                <p>
+                <ul>
+                    <li>Distinction entre les opcodes avec et sans argument</li>
+                    <li>Certains opcodes doivent être contigus</li> 
+                    <li>Voir <code>python/Include/opcode.h</code></li>
+                </ul>
+                </p>
+                <p>On peut mélanger les opcodes par groupes pour générer un nouvel interpréteur</p>
+                </section>
+
+                <section>
+                <h2>Génération de nouveaux opcodes </h2>
+                <p>Un opcode est stocké sur un <code>char</code> mais seulement 112 sont utilisés !
+                <ul>
+                    <li>Création d'alias sur des opcodes existants (facile)</li>
+                    <li>Création de nouveaux opcodes agissant comme une séquences d'opcodes (plus intéréssant)</li>
+                </ul>
+
+                <ol>
+                    <li>Trouver les suites d'opcodes les plus fréquentes</li>
+                    <li>Les transformer en un unique opcode</li>
+                    <li>Avec une extension pour gérer les opcodes ayant plus de deux arguments</li>
+                </ol>
+                </p>
+                </section>
+
+				<section>
+                <h2>Opcodes fréquemment utilisés</h2>
+                <p>
+                <ol>
+                    <li>Parcours récursif des fichiers <code>.pyc</code> et construction de l'histogramme, en utilisant <code>marshal.loads</code> et <code>inspect.iscode</code></li>
+                    <li>Sélection des suites d'opcodes fréquemment utilisés</li>
+                    <li>Substitution des opcodes (attention à la gestion des exceptions et aux jumps) [<code>.pyc</code>&#8594;<code>.pyc</code>]</li>
+                </ol>
+                </p>
+                <p>Par exemple :
+                <pre><code>LOAD_FAST                0
+LOAD_CONST               n</pre></code>
+                </p>
+                <p> Devient :
+                <pre><code>LOAD_FAST_LOAD_CONST     O
+ANY_OPCODE_WITH_ARG      n</code></pre>
+                </p>
+                </section>
+
+                <section>
+                <h2>Suites d'opcodes non standard</h2>
+                <p>Certains décompilateur font des hypothèses sur l'ordre des bytecodes (certains pensent que la décompilation <code>~=</code> pattern matching)
+                <pre><code>LOAD_FAST 0
+LOAD_FAST 1
+BUILD_MAP 0
+ROT_THREE
+BINARY_ADD
+ROT_TWO
+POP_TOP
+</code></pre>
+                </p>
+                <p>Est équivalent à<pre><code>LOAD_FAST 0
+LOAD_FAST 1
+BINARY_ADD</pre></code></p>
+                <p>Avec ce code <code>uncompyle</code> crash ! Mais pas <code>pycdc</code>...</p>
+
+                </section>
+
+                <section>
+                <h2>Chiffrement des constantes</h2>
+                <br/>
+                <p>
+                <pre><code>&gt;&gt;&gt;def foo(): return "pyconfr"
+&gt;&gt;&gt;import dis
+&gt;&gt;&gt;dis.dis(foo)
+1           0 LOAD_CONST               1 ('pyconfr')
+            3 RETURN_VALUE</code></pre>
+                </p>
+                <br/>
+                <p>Les chaînes de caractères sont chargées avec <code>LOAD_CONST</code>, on peut donc</p>
+                <p>
+                <ol>
+                    <li>Chiffrer toute les chaînes de caractères</li>
+                    <li>Modifier <code>LOAD_CONST</code> pour déchiffrer les chaînes de caractère à la volée </li>
+                </ol>
+                </p>
+                <br/>
+                <br/>
+                <p><small>proof of concept... avec un <code>rot13</code></small></p>
+                </section>
+
+                <section>
+                <h2>Plongeons dans CPython</h2>
+                <p>
+                Du code se modifiant lui-même automatiquement ?
+                </p>
+                <p class="fragment">
+                Les fonctions embarquent parmis leurs attributs, leurs bytecodes en tant que chaîne de caractères :-)
+                </p>
+                <p class="fragment">
+                Mais les chaînes de caractères sont immutables en Python :-(
+                </p>
+                <p class="fragment">
+                Sauf si on les modifie depuis un module natif ;-)
+                </p>
+                </section>
+
+                <section>
+                <h2>Code auto-modifiant</h2>
+                <p>
+                <pre><code class="C">static PyObject* this_function_modifies_its_caller() {
+  PyThreadState *tstate = PyThreadState_GET();
+  if (NULL != tstate && NULL != tstate->frame) {
+    PyFrameObject *frame = tstate->frame;
+
+    int instr = frame->f_lasti;
+    unsigned char* bytes = (void*)PyString_AS_STRING(frame->f_code->co_code);
+    bytes[instr + 10] = INPLACE_MODULO;
+  }
+  Py_INCREF(Py_None);
+  return Py_None;
+}</code></pre>
+                <ol>
+                    <li>Récupération du parent</li>
+                    <li>Récupération du bytecode de la fonction</li>
+                    <li>Transformation de l'opcode suivant en un modulo</li>
+                </ol>
+                </p>
+                <p>
+                Appelez cette fonction avant une opération binaire pour la transformer en un modulo !
+                </p>
+                </section>
+
+                <section>
+                <h2>Divers extra</h2>
+                <p>
+                <ul>
+                    <li>Remplacement du « magic number » par une valeur aléatoire</li>
+                    <li>Désactivation de l'introspection sur les objets <code>code</code></li>
+                    <li>Désactivation de  <code>dump[s]/load[s]</code> du module marshal</li>
+                    <li>Désactivation de la recompilation du bytecode lors de changement des sources</li>
+                </ul>
+                </section>
+
+                <section>
+                <h2>Points bonus</h2>
+                <p>
+                <ul>
+                    <li>Utiliser un packer Python (e.g. <code>pyinstaller</code>) pour lier une application Python et l'interpréteur modifié dans un unique binaire</li>
+                    <li>Utiliser un compilateur Python (e.g. <code>numba, shedskin, pythran</code>) pour transformer certain(e)s fonctions/modules en code natif</li>
+                    <li>Utiliser un obfuscateur C pour obfusquer la partie obfuscation de l'interpréteur !</li>
+                </ul>
+                </section>
+
+                <section>
+                <h2>How To</h2>
+                <p>
+                <pre><code>$ ../configure --help
+[...]
+  --disable-marshal       hide marshal functions
+  --disable-codeobject    hide codeobject functions
+  --disable-recompilation disable recompilation of .pyc file when .py file is
+  --enable-cipher-str     enable string litteral ciphering
+  --enable-shuffle-opcode enable opcodes shuffling
+  --enable-gen-opcode     enable generation of new opcodes
+</code></pre>
+
+                </p>
+                </section>
+
+
+				<section>
+					<h1>THE END</h1>
+                    <p>
+                    <dl>
+                        <dt><strong>AUTEURS</strong></dt>
+                        <dd>Nicolas Szlifierski et Serge Guelton</dd>
+                        <dt><strong>DÉPOT GIT</strong></dt>
+                        <dd><a href="https://github.com/quarkslab/cpython/tree/obfuscated/2.7">https://github.com/quarkslab/cpython</a> <br/>branch <code>obfuscated/2.7</code></dd>
+                        <dt><strong>SLIDES</strong></dt>
+                        <dd><a href="https://github.com/nvcs/talks">https://github.com/nvcs/talks</a></dd>
+                    </dl>
+                    </p>
+
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
